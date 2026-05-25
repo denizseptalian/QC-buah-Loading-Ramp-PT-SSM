@@ -161,7 +161,7 @@ with st.sidebar:
 
         <div class="created-by-container">
             <img class="created-by-img" src="data:image/png;base64,{image_to_base64(profile_img)}" />
-            <div class="created-by-text">Created by : Tsabit</div>
+            <div class="created-by-text">Created by : AI kebun</div>
         </div>
         """,
         unsafe_allow_html=True,
