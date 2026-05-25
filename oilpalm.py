@@ -122,7 +122,7 @@ def crop_center_square(img):
 # =============================
 # Load foto profil
 # =============================
-profile_img = Image.open("foto.png")
+profile_img = Image.open("foto.jpg")
 profile_img = crop_center_square(profile_img)
 
 
