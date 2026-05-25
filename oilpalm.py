@@ -8,7 +8,8 @@ from supervision import BoxAnnotator, LabelAnnotator, Color, Detections
 from io import BytesIO
 import base64
 import tempfile
-import plotly.express as px  # ==== TAMBAHAN BARU UNTUK DIAGRAM ====
+import plotly.express as px  
+import datetime  # 🌟 TAMBAHAN BARU UNTUK WAKTU OTOMATIS
 
 
 # =============================
@@ -45,15 +46,15 @@ label_to_color = {
     "mentah": Color.BLACK
 }
 
-# Perbaikan ukuran teks agar tidak menumpuk raksasa
+# Ukuran label proporsional agar tidak menumpuk
 label_annotator = LabelAnnotator(
-    text_scale=0.6,       # Diperkecil agar rapi
-    text_thickness=1,     # Ketebalan huruf disesuaikan
-    text_padding=4        # Jarak aman teks
+    text_scale=0.6,       
+    text_thickness=1,     
+    text_padding=4        
 )
 
 box_annotator = BoxAnnotator(
-    thickness=2           # Garis box dipertipis agar objek terlihat
+    thickness=2           
 )
 
 
@@ -117,7 +118,7 @@ def crop_center_square(img):
 
 
 # =============================
-# Load foto profil (Opsional / dengan Try-Except agar aman)
+# Load foto profil (Try-Except agar aman)
 # =============================
 try:
     profile_img = Image.open("foto.jpg")
@@ -131,10 +132,12 @@ except:
 # Sidebar
 # =============================
 with st.sidebar:
-    st.image("logo.png", width=150)
+    try:
+        st.image("logo.png", width=150)
+    except:
+        pass
+        
     st.markdown("<h4>Pilih metode input:</h4>", unsafe_allow_html=True)
-    
-    # 🌟 KUNCI PERUBAHAN: Menambahkan "Buka Kamera" di pilihan menu
     option = st.radio("", ["Upload Gambar", "Buka Kamera", "Upload Video"], label_visibility="collapsed")
 
     if profile_base64:
@@ -178,7 +181,7 @@ with st.sidebar:
 st.markdown("<h1 style='text-align:center;'>🌴 Deteksi Kematangan Buah Sawit</h1>", unsafe_allow_html=True)
 
 st.markdown("""
-<div style="text-align:center; font-size:16px; max-width:800px; margin:auto;">
+<div style="text-align:center; font-size:16px; max-width:800px; margin:auto; margin-bottom: 20px;">
     Sistem ini menggunakan teknologi YOLOv8 untuk mendeteksi kematangan buah kelapa sawit 
     secara otomatis berdasarkan gambar, kamera langsung, atau video input. 
 </div>
@@ -186,9 +189,25 @@ st.markdown("""
 
 
 # ==========================================================
+# 🌟 TAMBAHAN BARU: INPUT DATA AWAL (AFDELING & PLAT NOMOR)
+# ==========================================================
+st.markdown("### 📝 Informasi Operasional")
+col_info1, col_info2 = st.columns(2)
+
+with col_info1:
+    no_afdeling = st.text_input("Nomor Afdeling", placeholder="Contoh: Afdeling II / Blok B")
+
+with col_info2:
+    plat_nomor = st.text_input("Plat Nomor Kendaraan", placeholder="Contoh: BK 1234 ABC")
+
+
+# ==========================================================
 # Fungsi Pemroses Utama untuk Gambar / Kamera
 # ==========================================================
 def process_and_display_image(source_image):
+    # 🌟 TAMBAHAN BARU: Mengambil tanggal dan waktu otomatis dari perangkat
+    waktu_sekarang = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     with st.spinner("🔍 Memproses gambar..."):
         results = model(source_image)
         result_img, class_counts = draw_results(source_image, results)
@@ -216,7 +235,21 @@ def process_and_display_image(source_image):
         "image/png"
     )
 
-    # REKAP DETEKSI
+    # 🌟 TAMBAHAN BARU: TAMPILAN RESUME INFORMASI INPUTAN & WAKTU
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+    st.markdown("### 📋 Ringkasan Laporan Lapangan")
+    
+    col_rep1, col_rep2, col_rep3 = st.columns(3)
+    with col_rep1:
+        st.markdown(f"**Nomor Afdeling:**<br><span style='font-size:18px;'>{no_afdeling if no_afdeling else '-'}</span>", unsafe_allow_html=True)
+    with col_rep2:
+        st.markdown(f"**Plat Kendaraan:**<br><span style='font-size:18px;'>{plat_nomor if plat_nomor else '-'}</span>", unsafe_allow_html=True)
+    with col_rep3:
+        st.markdown(f"**Waktu Deteksi (Otomatis):**<br><span style='font-size:18px; color:#2980b9;'>⏱ {waktu_sekarang}</span>", unsafe_allow_html=True)
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+
+    # REKAP DETEKSI ANGKA
     total = sum(class_counts.values())
     mentah = class_counts.get("mentah", 0)
     mengkal = class_counts.get("mengkal", 0)
@@ -289,9 +322,8 @@ if option == "Upload Gambar":
         image = Image.open(uploaded_file)
         process_and_display_image(image)
 
-# JALUR 2: 🌟 SELEKSI FITUR BARU - BUKA KAMERA
+# JALUR 2: BUKA KAMERA
 elif option == "Buka Kamera":
-    # Membuat komponen input kamera di halaman web
     camera_file = st.camera_input("Ambil Foto Buah Sawit")
     if camera_file:
         image = Image.open(camera_file)
@@ -335,6 +367,18 @@ elif option == "Upload Video":
         cap.release()
         out.release()
         st.success("✅ Video selesai diproses!")
+
+        # 🌟 Untuk Laporan Ringkas Video (Opsional, Menampilkan data terinput)
+        st.markdown("<br><hr>", unsafe_allow_html=True)
+        st.markdown("### 📋 Ringkasan Laporan Lapangan (Video)")
+        col_rep1, col_rep2, col_rep3 = st.columns(3)
+        with col_rep1:
+            st.markdown(f"**Nomor Afdeling:**<br>{no_afdeling if no_afdeling else '-'}")
+        with col_rep2:
+            st.markdown(f"**Plat Kendaraan:**<br>{plat_nomor if plat_nomor else '-'}")
+        with col_rep3:
+            st.markdown(f"**Waktu Proses:**<br>{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.markdown("<hr>", unsafe_allow_html=True)
 
         with open(output_path, "rb") as f:
             st.download_button(
