@@ -38,23 +38,29 @@ model = load_model()
 
 
 # =============================
-# Warna label
+# Warna label & Inisialisasi Annotator (UBAH BAGIAN INI)
 # =============================
 label_to_color = {
     "matang": Color.RED,
     "mengkal": Color.YELLOW,
     "mentah": Color.BLACK
 }
+
+# Di sini kita sesuaikan ukurannya agar jauh lebih proporsional dan tidak menumpuk
 label_annotator = LabelAnnotator(
-    text_scale=5,       #  perbesar ukuran teks (default kecil)
-    text_thickness=3,     #  tebalkan huruf
-    text_padding=7       #  beri jarak biar tidak mepet box
+    text_scale=0.6,       # Diperkecil dari 5 menjadi 0.6
+    text_thickness=1,     # Diperkecil dari 3 menjadi 1
+    text_padding=4        # Padding disesuaikan agar rapi
+)
+
+# Inisialisasi BoxAnnotator global dengan ketebalan garis yang tipis
+box_annotator = BoxAnnotator(
+    thickness=2           # Diperkecil dari 3 menjadi 2 agar garis lebih rapi
 )
 
 
-
 # =============================
-# Fungsi anotasi YOLO
+# Fungsi anotasi YOLO (UBAH BAGIAN INI)
 # =============================
 def draw_results(image, results):
     img = np.array(image.convert("RGB"))
@@ -74,28 +80,25 @@ def draw_results(image, results):
                 continue
 
             class_name = names[class_id].strip().lower()
-            label = f"{class_name}"
+            label = f"{class_name} {conf:.2f}" # Opsional: tambah skor confidence biar informatif
 
             color = label_to_color.get(class_name, Color.WHITE)
             class_counts[class_name] += 1
 
-            box_annotator = BoxAnnotator(
-                color=color,
-                thickness=3   # KETEBALAN BOUNDING BOX
-            )
-
+            # Membuat objek Detections tunggal untuk item ini
             detection = Detections(
                 xyxy=np.array([box]),
                 confidence=np.array([conf]),
                 class_id=np.array([class_id])
             )
 
+            # Gambar box (menggunakan box_annotator global yang sudah kita buat di atas)
             img = box_annotator.annotate(
                 scene=img,
                 detections=detection
             )
 
-            # 🔥 pakai label_annotator GLOBAL (yang text_scale=7)
+            # Gambar label (menggunakan label_annotator global)
             img = label_annotator.annotate(
                 scene=img,
                 detections=detection,
@@ -103,8 +106,6 @@ def draw_results(image, results):
             )
 
     return Image.fromarray(img), class_counts
-
-
 
 # =============================
 # Fungsi crop foto
